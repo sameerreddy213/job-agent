@@ -137,6 +137,39 @@ export interface ProfileOut {
   linkedin_url: string | null;
   github_url: string | null;
   portfolio_url: string | null;
+  // Extended profile (Phase 8D)
+  first_name: string | null;
+  middle_name: string | null;
+  last_name: string | null;
+  college_email: string | null;
+  date_of_birth: string | null;
+  gender: string | null;
+  nationality: string | null;
+  address_line: string | null;
+  city: string | null;
+  state: string | null;
+  pincode: string | null;
+  preferred_locations: string | null;
+  qualification: string | null;
+  college_name: string | null;
+  degree: string | null;
+  branch: string | null;
+  joined_date: string | null;
+  graduation_date: string | null;
+  graduation_year: string | null;
+  cgpa: string | null;
+  class12_board: string | null;
+  class12_stream: string | null;
+  class12_school: string | null;
+  class12_percentage: string | null;
+  class12_year: string | null;
+  class10_board: string | null;
+  class10_school: string | null;
+  class10_percentage: string | null;
+  class10_year: string | null;
+  languages: string | null;
+  current_ctc: string | null;
+  shift_preference: string | null;
   updated_at: string;
 }
 

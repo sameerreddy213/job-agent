@@ -7,6 +7,18 @@ import { ProfileApi, SettingsApi } from "../lib/api";
 import { fmtDate } from "../lib/format";
 import type { CompanyBlacklistOut, KeywordBlacklistOut, ProfileOut, SettingsOut } from "../lib/types";
 
+// Extended profile text fields (Phase 8D). Boolean `relocation` stays separate.
+const EXTENDED_KEYS = [
+  "first_name", "middle_name", "last_name", "college_email", "date_of_birth",
+  "gender", "nationality", "address_line", "city", "state", "pincode",
+  "preferred_locations", "qualification", "college_name", "degree", "branch",
+  "joined_date", "graduation_date", "graduation_year", "cgpa",
+  "class12_board", "class12_stream", "class12_school", "class12_percentage", "class12_year",
+  "class10_board", "class10_school", "class10_percentage", "class10_year",
+  "languages", "current_ctc", "shift_preference",
+] as const;
+type ExtKey = (typeof EXTENDED_KEYS)[number];
+
 type ProfileForm = {
   full_name: string;
   email: string;
@@ -20,7 +32,9 @@ type ProfileForm = {
   linkedin_url: string;
   github_url: string;
   portfolio_url: string;
-};
+} & Record<ExtKey, string>;
+
+const emptyExt = () => Object.fromEntries(EXTENDED_KEYS.map((k) => [k, ""])) as Record<ExtKey, string>;
 
 const EMPTY_PROFILE: ProfileForm = {
   full_name: "",
@@ -35,9 +49,13 @@ const EMPTY_PROFILE: ProfileForm = {
   linkedin_url: "",
   github_url: "",
   portfolio_url: "",
+  ...emptyExt(),
 };
 
 function toForm(p: ProfileOut): ProfileForm {
+  const ext = Object.fromEntries(
+    EXTENDED_KEYS.map((k) => [k, (p as unknown as Record<string, unknown>)[k] ?? ""]),
+  ) as Record<ExtKey, string>;
   return {
     full_name: p.full_name ?? "",
     email: p.email ?? "",
@@ -51,8 +69,65 @@ function toForm(p: ProfileOut): ProfileForm {
     linkedin_url: p.linkedin_url ?? "",
     github_url: p.github_url ?? "",
     portfolio_url: p.portfolio_url ?? "",
+    ...ext,
   };
 }
+
+// Grouped layout for the extended fields.
+const PROFILE_GROUPS: { title: string; fields: { key: ExtKey; label: string }[] }[] = [
+  {
+    title: "Identity",
+    fields: [
+      { key: "first_name", label: "First name" },
+      { key: "middle_name", label: "Middle name" },
+      { key: "last_name", label: "Last name" },
+      { key: "date_of_birth", label: "Date of birth (YYYY-MM-DD)" },
+      { key: "gender", label: "Gender" },
+      { key: "nationality", label: "Nationality" },
+    ],
+  },
+  {
+    title: "Contact & address",
+    fields: [
+      { key: "college_email", label: "College email" },
+      { key: "address_line", label: "Address line" },
+      { key: "city", label: "City" },
+      { key: "state", label: "State" },
+      { key: "pincode", label: "Pincode" },
+      { key: "preferred_locations", label: "Preferred locations" },
+    ],
+  },
+  {
+    title: "Education",
+    fields: [
+      { key: "qualification", label: "Highest qualification" },
+      { key: "college_name", label: "College / university" },
+      { key: "degree", label: "Degree" },
+      { key: "branch", label: "Branch" },
+      { key: "graduation_year", label: "Graduation year" },
+      { key: "cgpa", label: "CGPA / %" },
+      { key: "joined_date", label: "Joined (YYYY-MM-DD)" },
+      { key: "graduation_date", label: "Graduating (YYYY-MM-DD)" },
+      { key: "class12_board", label: "Class 12 board" },
+      { key: "class12_stream", label: "Class 12 stream" },
+      { key: "class12_school", label: "Class 12 school" },
+      { key: "class12_percentage", label: "Class 12 %" },
+      { key: "class12_year", label: "Class 12 year" },
+      { key: "class10_board", label: "Class 10 board" },
+      { key: "class10_school", label: "Class 10 school" },
+      { key: "class10_percentage", label: "Class 10 %" },
+      { key: "class10_year", label: "Class 10 year" },
+    ],
+  },
+  {
+    title: "Work preferences",
+    fields: [
+      { key: "languages", label: "Languages known" },
+      { key: "current_ctc", label: "Current CTC" },
+      { key: "shift_preference", label: "Shift preference" },
+    ],
+  },
+];
 
 const APPLIES_TO_OPTIONS = ["both", "title", "description"] as const;
 
@@ -142,6 +217,9 @@ export function Settings() {
         linkedin_url: profile.linkedin_url || null,
         github_url: profile.github_url || null,
         portfolio_url: profile.portfolio_url || null,
+        ...Object.fromEntries(
+          EXTENDED_KEYS.map((k) => [k, (profile[k] || "").trim() || null]),
+        ),
       };
       const updated = await ProfileApi.update(payload);
       setProfile(toForm(updated));
@@ -294,6 +372,21 @@ export function Settings() {
                 <Input value={profile.portfolio_url} onChange={(e) => setField("portfolio_url", e.target.value)} />
               </Field>
             </div>
+
+            {PROFILE_GROUPS.map((group) => (
+              <div key={group.title}>
+                <h3 className="mb-2 mt-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  {group.title}
+                </h3>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {group.fields.map((f) => (
+                    <Field key={f.key} label={f.label}>
+                      <Input value={profile[f.key]} onChange={(e) => setField(f.key, e.target.value)} />
+                    </Field>
+                  ))}
+                </div>
+              </div>
+            ))}
 
             <label className="flex items-center gap-2 text-sm">
               <input

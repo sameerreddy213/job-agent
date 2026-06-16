@@ -17,6 +17,44 @@ class ProfileBase(BaseModel):
     github_url: str | None = None
     portfolio_url: str | None = None
 
+    # Extended identity / contact (profile extension)
+    first_name: str | None = None
+    middle_name: str | None = None
+    last_name: str | None = None
+    college_email: str | None = None
+    date_of_birth: str | None = None
+    gender: str | None = None
+    nationality: str | None = None
+    address_line: str | None = None
+    city: str | None = None
+    state: str | None = None
+    pincode: str | None = None
+    preferred_locations: str | None = None
+
+    # Education
+    qualification: str | None = None
+    college_name: str | None = None
+    degree: str | None = None
+    branch: str | None = None
+    joined_date: str | None = None
+    graduation_date: str | None = None
+    graduation_year: str | None = None
+    cgpa: str | None = None
+    class12_board: str | None = None
+    class12_stream: str | None = None
+    class12_school: str | None = None
+    class12_percentage: str | None = None
+    class12_year: str | None = None
+    class10_board: str | None = None
+    class10_school: str | None = None
+    class10_percentage: str | None = None
+    class10_year: str | None = None
+
+    # Work / preferences
+    languages: str | None = None
+    current_ctc: str | None = None
+    shift_preference: str | None = None
+
 
 class ProfileUpdate(ProfileBase):
     """All fields required except the optionals above (upsert of the singleton)."""

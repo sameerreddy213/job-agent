@@ -81,6 +81,18 @@ def build_resume_summary(profile: Profile, role_category: str | None, skills: li
 
     if skills:
         lines.append(f"Core skills: {_skill_phrase(skills, limit=15)}")
+
+    # Education line (only the parts that are filled in).
+    edu_bits = [b for b in [
+        profile.degree, profile.branch, profile.college_name,
+        f"CGPA {profile.cgpa}" if profile.cgpa else None,
+        f"Graduating {profile.graduation_year}" if profile.graduation_year else None,
+    ] if b]
+    if edu_bits:
+        lines.append("Education: " + " | ".join(edu_bits))
+
+    if profile.languages:
+        lines.append(f"Languages: {profile.languages}")
     if profile.expected_ctc:
         lines.append(f"Expected CTC: {profile.expected_ctc}")
 
@@ -119,12 +131,64 @@ def build_application_answers(profile: Profile, job: Job, skills: list[str]) -> 
         why += f", where I can apply my skills in {_skill_phrase(skills, limit=5)}"
     add("Why are you interested in this role?", why + ".")
 
+    # Identity (so every packet shows the full applicant details).
+    add("Full name?", profile.full_name)
+    if profile.first_name or profile.last_name:
+        name_note = f"First: {profile.first_name or '-'}, Last: {profile.last_name or '-'}"
+        if profile.middle_name:
+            name_note += f", Middle: {profile.middle_name}"
+        # If the first name is two words, suggest splitting the trailing word into
+        # the middle name for portals that reject multi-word first names.
+        fn = (profile.first_name or "").strip()
+        if " " in fn and not profile.middle_name:
+            head, _, tail = fn.rpartition(" ")
+            name_note += f" (if a two-word first name is rejected, use First: {head}, Middle: {tail})"
+        add("First / last name?", name_note)
+    add("Date of birth?", profile.date_of_birth)
+    add("Gender?", profile.gender)
+    add("Nationality?", profile.nationality)
+
     add("Total years of experience?", "Fresher (0 years)")
+    add("Current CTC?", profile.current_ctc or "0 (fresher)")
     add("Expected CTC?", profile.expected_ctc or "Negotiable")
     add("Notice period?", profile.notice_period or "Immediate")
     add("Are you open to relocation?", "Yes" if profile.relocation else "No")
+    add("Preferred work location(s)?", profile.preferred_locations)
+    add("Willing to work any shift?", profile.shift_preference)
     add("Work authorization?", profile.work_auth)
+    add("Languages known?", profile.languages)
+
+    # Contact / address.
     add("Current location?", profile.location)
+    address = ", ".join(filter(None, [
+        profile.address_line, profile.city, profile.state, profile.pincode,
+    ]))
+    add("Full address?", address or None)
+    add("Email?", profile.email)
+    add("College email?", profile.college_email)
+    add("Phone?", profile.phone)
+
+    # Education.
+    degree_line = " ".join(filter(None, [profile.degree, profile.branch]))
+    add("Highest qualification?", profile.qualification)
+    add("Degree / branch?", degree_line or None)
+    add("College / university?", profile.college_name)
+    add("Graduation year?", profile.graduation_year)
+    add("CGPA / percentage (graduation)?", profile.cgpa)
+    class12 = " | ".join(filter(None, [
+        profile.class12_stream, profile.class12_school, profile.class12_board,
+        f"{profile.class12_percentage}" if profile.class12_percentage else None,
+        f"({profile.class12_year})" if profile.class12_year else None,
+    ]))
+    add("Class 12 / Intermediate?", class12 or None)
+    class10 = " | ".join(filter(None, [
+        profile.class10_school, profile.class10_board,
+        f"{profile.class10_percentage}" if profile.class10_percentage else None,
+        f"({profile.class10_year})" if profile.class10_year else None,
+    ]))
+    add("Class 10 / SSC?", class10 or None)
+
+    # Links.
     add("LinkedIn profile?", profile.linkedin_url)
     add("GitHub profile?", profile.github_url)
     add("Portfolio?", profile.portfolio_url)
