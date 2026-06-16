@@ -17,6 +17,11 @@ import type {
   ApplicationEventOut,
   ApplicationOut,
   ApprovalStats,
+  AtsBreakdown,
+  ChecklistOut,
+  PacketOut,
+  ReadinessItem,
+  ReadinessReport,
   AuditOut,
   CompanyBlacklistOut,
   DashboardSummary,
@@ -238,6 +243,44 @@ export const ApplicationsApi = {
   },
   async analytics(): Promise<ApplicationAnalytics> {
     return (await api.get<ApplicationAnalytics>("/applications/analytics")).data;
+  },
+  // ATS integration layer (Phase 8B)
+  async readiness(readyOnly = false): Promise<ReadinessItem[]> {
+    return (await api.get<ReadinessItem[]>("/applications/readiness", { params: { ready_only: readyOnly } })).data;
+  },
+  async readyQueue(): Promise<ReadinessItem[]> {
+    return (await api.get<ReadinessItem[]>("/applications/ready-queue")).data;
+  },
+  async atsBreakdown(): Promise<AtsBreakdown> {
+    return (await api.get<AtsBreakdown>("/applications/ats-breakdown")).data;
+  },
+  async appReadiness(id: string): Promise<ReadinessReport> {
+    return (await api.get<ReadinessReport>(`/applications/${id}/readiness`)).data;
+  },
+  async detectAts(id: string): Promise<ApplicationDetailOut> {
+    return (await api.post<ApplicationDetailOut>(`/applications/${id}/detect-ats`)).data;
+  },
+  // Manual apply assistant (Phase 8C)
+  async checklist(id: string): Promise<ChecklistOut> {
+    return (await api.get<ChecklistOut>(`/applications/${id}/checklist`)).data;
+  },
+  async confirmReady(id: string): Promise<ApplicationDetailOut> {
+    return (await api.post<ApplicationDetailOut>(`/applications/${id}/confirm-ready`)).data;
+  },
+  async packetStatus(id: string): Promise<PacketOut> {
+    return (await api.get<PacketOut>(`/applications/${id}/packet`)).data;
+  },
+  async generatePacket(id: string): Promise<PacketOut> {
+    return (await api.post<PacketOut>(`/applications/${id}/packet`)).data;
+  },
+  async downloadPacket(id: string, fmt: string): Promise<void> {
+    const res = await api.get(`/applications/${id}/packet/download/${fmt}`, { responseType: "blob" });
+    const url = URL.createObjectURL(res.data as Blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `application-packet.${fmt}`;
+    a.click();
+    URL.revokeObjectURL(url);
   },
 };
 

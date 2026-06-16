@@ -110,7 +110,9 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      # Defaults to the HTTPS+domain config. For an IP-only HTTP deploy set
+      # NGINX_CONF_DIR=./nginx/conf.d.http in .env (see infra/aws-ec2-setup.md).
+      - ${NGINX_CONF_DIR:-./nginx/conf.d}:/etc/nginx/conf.d:ro
       - certbot_conf:/etc/letsencrypt
       - certbot_www:/var/www/certbot
     networks:

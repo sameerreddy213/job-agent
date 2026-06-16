@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { ManualApplyCard } from "../components/ManualApplyCard";
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Select, Spinner } from "../components/ui";
 import { useToast } from "../context/ToastContext";
 import { ApplicationsApi } from "../lib/api";
-import { appStateTone, fmtDate } from "../lib/format";
-import { APP_TRANSITIONS, type ApplicationDetailOut, type ApplicationState } from "../lib/types";
+import { appStateTone, fmtDate, scoreTone } from "../lib/format";
+import { APP_TRANSITIONS, type ApplicationDetailOut, type ApplicationState, type ReadinessReport } from "../lib/types";
 
 export function ApplicationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
   const [app, setApp] = useState<ApplicationDetailOut | null>(null);
+  const [readiness, setReadiness] = useState<ReadinessReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [target, setTarget] = useState("");
@@ -22,8 +24,12 @@ export function ApplicationDetail() {
     if (!id) return;
     setLoading(true);
     try {
-      const data = await ApplicationsApi.get(id);
+      const [data, r] = await Promise.all([
+        ApplicationsApi.get(id),
+        ApplicationsApi.appReadiness(id).catch(() => null),
+      ]);
       setApp(data);
+      setReadiness(r);
       setNotes(data.notes ?? "");
       setTarget("");
     } catch {
@@ -49,6 +55,21 @@ export function ApplicationDetail() {
       toast.success(`Moved to ${updated.status}`);
     } catch (err: any) {
       toast.error(err?.response?.status === 409 ? "Invalid state transition" : "Transition failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const redetect = async () => {
+    if (!id) return;
+    setBusy(true);
+    try {
+      const updated = await ApplicationsApi.detectAts(id);
+      setApp(updated);
+      setReadiness(await ApplicationsApi.appReadiness(id).catch(() => null));
+      toast.success(`ATS detected: ${updated.ats_type}`);
+    } catch {
+      toast.error("Detection failed");
     } finally {
       setBusy(false);
     }
@@ -127,6 +148,58 @@ export function ApplicationDetail() {
           />
           <Button className="mt-2" variant="secondary" onClick={saveNotes} disabled={busy}>Save notes</Button>
         </Card>
+
+        <Card className="lg:col-span-2">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">ATS & readiness</h2>
+            {readiness && (
+              <Badge tone={scoreTone(readiness.ready_score)}>{readiness.ready_score}/100</Badge>
+            )}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <dl className="grid grid-cols-2 gap-y-2 text-sm">
+              <dt className="text-slate-500 dark:text-slate-400">ATS</dt>
+              <dd><Badge tone={app.ats_type === "UNKNOWN" ? "amber" : "indigo"}>{app.ats_type}</Badge></dd>
+              <dt className="text-slate-500 dark:text-slate-400">Version</dt>
+              <dd>{app.ats_version ?? "—"}</dd>
+              <dt className="text-slate-500 dark:text-slate-400">Easy apply</dt>
+              <dd>{app.supports_easy_apply ? "Yes" : "No"}</dd>
+              <dt className="text-slate-500 dark:text-slate-400">Manual fields</dt>
+              <dd>{app.requires_manual_fields ? "Required" : "No"}</dd>
+            </dl>
+            <div>
+              <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Readiness checklist
+              </p>
+              {readiness ? (
+                <div className="flex flex-wrap gap-1.5">
+                  <Badge tone={readiness.missing_materials ? "red" : "green"}>
+                    {readiness.missing_materials ? "missing materials" : "materials ✓"}
+                  </Badge>
+                  <Badge tone={readiness.missing_resume ? "red" : "green"}>
+                    {readiness.missing_resume ? "missing resume" : "resume ✓"}
+                  </Badge>
+                  <Badge tone={readiness.missing_answers ? "red" : "green"}>
+                    {readiness.missing_answers ? "missing answers" : "answers ✓"}
+                  </Badge>
+                  {readiness.manual_review_required && <Badge tone="amber">manual review required</Badge>}
+                  {readiness.ready && <Badge tone="green">ready to apply</Badge>}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400">—</p>
+              )}
+            </div>
+          </div>
+          {app.application_url && (
+            <p className="mt-3 truncate text-xs text-slate-400">Apply URL: {app.application_url}</p>
+          )}
+          <Button className="mt-3" variant="ghost" onClick={redetect} disabled={busy}>Re-detect ATS</Button>
+          <p className="mt-2 text-xs text-slate-400">
+            Detection only — no application is ever submitted automatically.
+          </p>
+        </Card>
+
+        <ManualApplyCard appId={app.id} onConfirmed={load} />
 
         <Card className="lg:col-span-2">
           <h2 className="mb-3 text-lg font-semibold">Documents</h2>

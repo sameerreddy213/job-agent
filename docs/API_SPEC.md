@@ -174,6 +174,43 @@ NOT_STARTED with an explanatory event).
   `application_events`. `/metrics` adds `applications_created`,
   `applications_submitted`, `interviews`, `offers`, `rejections`.
 
+## Phase 8B routes (ATS integration layer — current)
+Understands *where* an application would be submitted and whether it's complete.
+**No submission, no browser automation, no Playwright** — ATS detection is pure
+analysis of the apply URL host. Detected types: GREENHOUSE, LEVER, ASHBY, WORKDAY,
+SMARTRECRUITERS, JOBVITE, BAMBOOHR, CUSTOM (real URL, unknown host), UNKNOWN (no URL).
+
+Per application we store `ats_type`, `ats_version` (e.g. Workday `wd3`),
+`application_url`, `supports_easy_apply`, `requires_manual_fields` (set on
+provisioning; refreshable). Readiness engine scores material completeness
+(materials 40 + resume 30 + answers 30 = 100); `ready` requires a full packet
+AND no manual fields.
+
+- `GET /applications/readiness?ready_only=` → applications + readiness summary
+- `GET /applications/ready-queue` → fully-ready applications
+- `GET /applications/ats-breakdown` → totals, detected/unknown, ready/manual, by-ATS
+- `GET /applications/{id}/readiness` → ready_score, ready, missing_*,
+  manual_review_required, reasons
+- `POST /applications/{id}/detect-ats` → re-run detection
+- `/metrics` adds `ready_to_apply`, `manual_review_required`, `ats_detected`,
+  `ats_unknown`. Migration `0010` adds the ATS columns.
+
+## Phase 8C routes (manual apply assistant — current)
+Helps the user apply **manually**. No submission, no browser automation, no Playwright.
+
+- `GET /applications/{id}/checklist` → checklist items ({key,label,done,required}),
+  `complete` (all required done), `ready_confirmed`.
+- `POST /applications/{id}/confirm-ready` → records the user's intent to apply
+  (sets `ready_confirmed`); never submits.
+- `POST /applications/{id}/packet` → builds a self-contained packet (Resume +
+  Cover Letter + Application Answers + Application Notes) as TXT/DOCX/PDF.
+  400 if materials not yet generated.
+- `GET /applications/{id}/packet` → packet status + available formats.
+- `GET /applications/{id}/packet/download/{fmt}` → download (txt/docx/pdf);
+  records a download audit event.
+- `/metrics` adds `application_packets_generated`, `application_packets_downloaded`,
+  `ready_to_apply_confirmed`. Migration `0011` adds packet/confirmation columns.
+
 ## Planned (later phases — not implemented yet)
 Apply engine / auto-submit (READY_TO_APPLY → APPLIED). Submission remains manual.
 

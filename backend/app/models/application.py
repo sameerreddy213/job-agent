@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -29,6 +29,20 @@ class Application(Base):
     status: Mapped[str] = mapped_column(String, nullable=False, server_default="NOT_STARTED")
     resume_category: Mapped[str | None] = mapped_column(String, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # ATS integration layer (Phase 8B) — understanding the target, not submitting.
+    ats_type: Mapped[str] = mapped_column(String, nullable=False, server_default="UNKNOWN")
+    ats_version: Mapped[str | None] = mapped_column(String, nullable=True)
+    application_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    supports_easy_apply: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    requires_manual_fields: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    # Manual apply assistant (Phase 8C) — the user confirms readiness and downloads
+    # a self-contained packet. We NEVER submit on their behalf.
+    ready_confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    ready_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    packet_generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    packet_txt_path: Mapped[str | None] = mapped_column(String, nullable=True)
+    packet_docx_path: Mapped[str | None] = mapped_column(String, nullable=True)
+    packet_pdf_path: Mapped[str | None] = mapped_column(String, nullable=True)
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

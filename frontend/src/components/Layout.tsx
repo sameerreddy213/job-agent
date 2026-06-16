@@ -15,6 +15,7 @@ const NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: "📊" },
   { to: "/queue", label: "Queue", icon: "🗂️" },
   { to: "/applications", label: "Applications", icon: "📮" },
+  { to: "/readiness", label: "Readiness", icon: "✅" },
   { to: "/analytics", label: "Analytics", icon: "📈" },
   { to: "/sources", label: "Sources", icon: "🔌" },
   { to: "/resumes", label: "Resumes", icon: "📄" },

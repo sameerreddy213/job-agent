@@ -4,6 +4,7 @@ import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Analytics } from "./pages/Analytics";
 import { ApplicationDetail } from "./pages/ApplicationDetail";
+import { ApplicationReadiness } from "./pages/ApplicationReadiness";
 import { Applications } from "./pages/Applications";
 import { AuditLogs } from "./pages/AuditLogs";
 import { Dashboard } from "./pages/Dashboard";
@@ -29,6 +30,7 @@ export default function App() {
       <Route path="/" element={<Shell><Dashboard /></Shell>} />
       <Route path="/queue" element={<Shell><Queue /></Shell>} />
       <Route path="/applications" element={<Shell><Applications /></Shell>} />
+      <Route path="/readiness" element={<Shell><ApplicationReadiness /></Shell>} />
       <Route path="/applications/:id" element={<Shell><ApplicationDetail /></Shell>} />
       <Route path="/jobs/:id" element={<Shell><JobDetail /></Shell>} />
       <Route path="/analytics" element={<Shell><Analytics /></Shell>} />

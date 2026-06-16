@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
+from .ats import detect_ats
 from .audit import write_audit
 from .materials import GenerationError, generate_materials
 from .models.application import Application, ApplicationAnswer, ApplicationDocument, ApplicationEvent
@@ -109,13 +110,26 @@ def _sync_documents(db: Session, app: Application, material: Material) -> None:
             ))
 
 
+def apply_ats_detection(app: Application, job: Job) -> None:
+    """Detect and store the ATS target for an application (idempotent)."""
+    det = detect_ats(job.apply_url, source=job.source)
+    app.ats_type = det.ats_type
+    app.ats_version = det.ats_version
+    app.application_url = det.application_url
+    app.supports_easy_apply = det.supports_easy_apply
+    app.requires_manual_fields = det.requires_manual_fields
+
+
 def get_or_create(db: Session, job: Job, actor: str) -> Application:
     app = db.query(Application).filter(Application.job_id == job.id).first()
     if app is None:
         app = Application(job_id=job.id, status=AppState.NOT_STARTED)
+        apply_ats_detection(app, job)
         db.add(app)
         db.flush()
         _record(db, app, None, AppState.NOT_STARTED, actor, "application created")
+    else:
+        apply_ats_detection(app, job)  # refresh in case apply_url changed
     return app
 
 

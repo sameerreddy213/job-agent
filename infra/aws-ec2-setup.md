@@ -70,6 +70,29 @@ The `certbot` service then auto-renews every 12h.
 ./scripts/deploy.sh
 ```
 
+## 9b. Alternative: IP-only HTTP deploy (no domain / no TLS)
+For a quick deploy reachable at `http://<public-ip>/` without a domain:
+
+1. **Security group:** open inbound **80** (0.0.0.0/0) and **22** (your IP). 443 not needed.
+2. **Swap** (t3.small has 2 GB; the frontend build needs headroom):
+   ```bash
+   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile
+   sudo mkswap /swapfile && sudo swapon /swapfile
+   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+   ```
+3. In `.env` select the HTTP-only nginx config (skip DOMAIN/ACME):
+   ```bash
+   echo 'NGINX_CONF_DIR=./nginx/conf.d.http' >> .env
+   ```
+4. Deploy without certbot:
+   ```bash
+   docker compose up -d --build postgres api worker frontend nginx
+   ```
+5. Verify: `curl http://localhost/api/health` then browse `http://<public-ip>/`.
+
+Note: logging in over plain HTTP sends the JWT in clear text — fine for testing,
+but add a domain + the HTTPS config (steps 7–9) before real use.
+
 ## 10. Schedule backups (cron)
 ```bash
 crontab -e

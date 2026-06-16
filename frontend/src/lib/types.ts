@@ -342,8 +342,65 @@ export interface ApplicationOut {
   submitted_at: string | null;
   created_at: string;
   updated_at: string;
+  ats_type: string;
+  ats_version: string | null;
+  application_url: string | null;
+  supports_easy_apply: boolean;
+  requires_manual_fields: boolean;
+  ready_confirmed: boolean;
+  ready_confirmed_at: string | null;
+  packet_generated_at: string | null;
   company: string | null;
   title: string | null;
+}
+
+export interface ChecklistItem {
+  key: string;
+  label: string;
+  done: boolean;
+  required: boolean;
+}
+export interface ChecklistOut {
+  application_id: string;
+  items: ChecklistItem[];
+  complete: boolean;
+  ready_confirmed: boolean;
+}
+export interface PacketOut {
+  application_id: string;
+  generated: boolean;
+  generated_at: string | null;
+  formats: string[];
+}
+
+export interface ReadinessReport {
+  application_id: string;
+  ready_score: number;
+  ready: boolean;
+  missing_materials: boolean;
+  missing_resume: boolean;
+  missing_answers: boolean;
+  manual_review_required: boolean;
+  reasons: string[];
+}
+
+export interface ReadinessItem extends ApplicationOut {
+  ready_score: number;
+  ready: boolean;
+  manual_review_required: boolean;
+}
+
+export interface AtsCount {
+  ats_type: string;
+  count: number;
+}
+export interface AtsBreakdown {
+  total: number;
+  detected: number;
+  unknown: number;
+  ready_to_apply: number;
+  manual_review_required: number;
+  by_ats: AtsCount[];
 }
 
 export interface ApplicationDocumentOut {
