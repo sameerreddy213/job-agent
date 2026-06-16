@@ -5,12 +5,29 @@ Rejects: blacklisted companies, blacklisted keywords, senior titles, and
 """
 from dataclasses import dataclass, field
 
+from ..config import settings
 from ..connectors.base import NormalizedJob
 from ..constants import (
     EXPERIENCE_REQ_REGEX,
     MAX_FRESHER_YEARS,
     REJECT_TITLE_KEYWORDS,
+    REMOTE_INDIA_HINTS,
+    TARGET_CITIES,
 )
+
+# Positive India signals: target cities, the word "india", or remote/hybrid hints.
+_INDIA_TOKENS = set(TARGET_CITIES) | set(REMOTE_INDIA_HINTS) | {"india", "bharat"}
+
+
+def is_india_location(job: NormalizedJob) -> bool:
+    """True if the job looks India-based, or its location is unknown (kept for
+    review). False only when a location is present and shows no India signal."""
+    loc = (job.location or "").lower().strip()
+    remote = (job.remote_status or "").lower().strip()
+    if not loc and not remote:
+        return True  # unknown — don't drop it; let scoring/review decide
+    blob = f"{loc} {remote}"
+    return any(tok in blob for tok in _INDIA_TOKENS)
 
 
 @dataclass
@@ -53,5 +70,9 @@ def filter_job(job: NormalizedJob, blacklists: Blacklists | None = None) -> tupl
     years = max_required_years(f"{job.title} {job.description or ''}")
     if years is not None and years > MAX_FRESHER_YEARS:
         return False, f"rejected: requires {years}+ years experience"
+
+    # India-only gate (tunable via INDIA_ONLY). Rejects clearly non-India roles.
+    if settings.INDIA_ONLY and not is_india_location(job):
+        return False, f"rejected: location '{job.location}' is not in India"
 
     return True, "passed fresher filter"

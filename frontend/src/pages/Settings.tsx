@@ -296,6 +296,41 @@ export function Settings() {
     }
   };
 
+  // Profile JSON import/export — paste a JSON blob to fill the whole form at once.
+  const [jsonText, setJsonText] = useState("");
+
+  const exportJson = async () => {
+    const text = JSON.stringify(profile, null, 2);
+    setJsonText(text);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Profile JSON copied to clipboard");
+    } catch {
+      toast.info("JSON written to the box below — copy it manually");
+    }
+  };
+
+  const importJson = () => {
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch {
+      toast.error("Invalid JSON");
+      return;
+    }
+    setProfile((prev) => {
+      const next = { ...prev };
+      (Object.keys(prev) as (keyof ProfileForm)[]).forEach((k) => {
+        if (k in parsed && parsed[k] != null) {
+          if (k === "relocation") next.relocation = Boolean(parsed[k]);
+          else (next as Record<string, unknown>)[k] = String(parsed[k]);
+        }
+      });
+      return next;
+    });
+    toast.success("Loaded into the form — review, then Save profile");
+  };
+
   if (loading) return <Spinner />;
 
   return (
@@ -404,6 +439,30 @@ export function Settings() {
               </Button>
             </div>
           </form>
+
+          {/* Import / Export the whole profile as JSON (fill once, copy anywhere). */}
+          <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-800">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Import / export (JSON)
+              </h3>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={exportJson} type="button">Copy current as JSON</Button>
+                <Button variant="secondary" onClick={importJson} type="button" disabled={!jsonText.trim()}>
+                  Load JSON into form
+                </Button>
+              </div>
+            </div>
+            <textarea
+              value={jsonText}
+              onChange={(e) => setJsonText(e.target.value)}
+              placeholder='Paste your profile JSON here, click "Load JSON into form", then Save profile.'
+              className="h-40 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800"
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              Paste once to fill every field — no need to type each one. "Load" only populates the form; click Save profile to persist.
+            </p>
+          </div>
         </Card>
 
         {/* 3) Blacklist management */}

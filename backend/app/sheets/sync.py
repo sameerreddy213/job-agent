@@ -9,7 +9,9 @@ from datetime import datetime
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from ..models.application import Application
 from ..models.job import Job, JobScore, RunHealth
+from ..models.material import Material
 from ..models.resume import Resume
 from ..models.source import Source
 from ..models.sync import SheetSyncRun, SyncState
@@ -111,6 +113,26 @@ def _sources_rows(db: Session):
     return rows
 
 
+def _applications_rows(db: Session):
+    """Applied/application details for the Applications tab (overwritten each sync)."""
+    rows = []
+    apps = db.query(Application).order_by(Application.updated_at.desc()).all()
+    for app in apps:
+        job = db.get(Job, app.job_id)
+        mat = db.query(Material).filter(Material.job_id == app.job_id).first()
+        cover = "Yes" if (mat and mat.cover_letter_text) else "No"
+        rows.append([
+            _fmt(app.submitted_at or app.created_at),
+            job.company if job else "",
+            job.title if job else "",
+            app.resume_category or "",
+            cover,
+            app.status,
+            (app.notes or "").replace("\n", " "),
+        ])
+    return rows
+
+
 def _resume_stats_rows(db: Session):
     rows = []
     for resume in db.query(Resume).order_by(Resume.category).all():
@@ -168,9 +190,10 @@ def sync_all(db: Session) -> dict:
         _overwrite(_ensure_ws(ss, "Resume Stats", RESUME_STATS_HEADER), RESUME_STATS_HEADER, rsrows)
         tabs["Resume Stats"] = len(rsrows)
 
-        # Applications (header only — applications table arrives in a later phase)
-        _overwrite(_ensure_ws(ss, "Applications", APPLICATIONS_HEADER), APPLICATIONS_HEADER, [])
-        tabs["Applications"] = 0
+        # Applications (overwrite with real applied details)
+        arows = _applications_rows(db)
+        _overwrite(_ensure_ws(ss, "Applications", APPLICATIONS_HEADER), APPLICATIONS_HEADER, arows)
+        tabs["Applications"] = len(arows)
 
         rows_written = sum(tabs.values())
         duration_ms = int((time.monotonic() - start) * 1000)

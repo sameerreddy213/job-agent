@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     # run_health WARNING if a source returns fewer than this many jobs
     HEALTH_MIN_JOBS_WARNING: int = 1
 
+    # Hard filters (pipeline). India-only rejects jobs whose location is clearly
+    # outside India; unknown/empty locations are kept for review.
+    INDIA_ONLY: bool = True
+
     # AI provider (Phase 8D / WI-3) — optional. When AI_PROVIDER=openrouter and
     # AI_API_KEY is set, materials are LLM-polished; otherwise deterministic
     # templates are used unchanged. OpenRouter is OpenAI-compatible.
