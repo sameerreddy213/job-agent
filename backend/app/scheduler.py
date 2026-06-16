@@ -65,6 +65,9 @@ def run_once() -> dict:
             extra={"service": "worker", "action": "pipeline.run", "status": "ok"},
         )
         _post_run_notifications(db, summary)
+        # Mirror the freshly-scraped openings to the Google Sheet immediately after
+        # each run (best-effort; no-op unless Sheets is enabled + configured).
+        sync_sheets_once()
         return summary
     except Exception:
         logger.exception(
