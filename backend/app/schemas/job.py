@@ -37,6 +37,7 @@ class JobOut(BaseModel):
     location: str | None = None
     experience: str | None = None
     apply_url: str | None = None
+    contact_email: str | None = None
     posted_date: datetime | None = None
     employment_type: str | None = None
     remote_status: str | None = None

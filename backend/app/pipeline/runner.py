@@ -10,7 +10,7 @@ from ..config import settings
 from ..connectors import CONNECTOR_REGISTRY
 from ..connectors.base import BaseConnector
 from ..connectors.sample import SampleConnector
-from ..constants import CLASS_REJECT, DEFAULT_SKILLS
+from ..constants import CLASS_REJECT, DEFAULT_SKILLS, first_email
 from ..intelligence.matching import ResumeProfile, recommend_resume
 from ..models.blacklist import CompanyBlacklist, KeywordBlacklist
 from ..models.job import Job, JobScore, RunHealth
@@ -107,6 +107,7 @@ def run_pipeline(db: Session) -> dict:
                 description=nj.description,
                 experience=nj.experience,
                 apply_url=nj.apply_url,
+                contact_email=first_email(nj.description, nj.title),
                 posted_date=nj.posted_date,
                 employment_type=nj.employment_type,
                 remote_status=nj.remote_status,

@@ -24,6 +24,8 @@ class Job(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     experience: Mapped[str | None] = mapped_column(String, nullable=True)
     apply_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Recruiter/contact email parsed from the JD (for manual outreach).
+    contact_email: Mapped[str | None] = mapped_column(String, nullable=True)
     posted_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     employment_type: Mapped[str | None] = mapped_column(String, nullable=True)
     remote_status: Mapped[str | None] = mapped_column(String, nullable=True)

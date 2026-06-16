@@ -39,6 +39,20 @@ EXPERIENCE_REQ_REGEX = re.compile(
 # Max acceptable required years for a fresher role
 MAX_FRESHER_YEARS = 1
 
+# Contact email extraction from job descriptions (for manual outreach).
+EMAIL_REGEX = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
+
+
+def first_email(*texts: str | None) -> str | None:
+    """First email found across the given texts (e.g. a recruiter contact)."""
+    for t in texts:
+        if not t:
+            continue
+        m = EMAIL_REGEX.search(t)
+        if m:
+            return m.group(0)
+    return None
+
 # Default candidate skills used when no resume skills are detected yet.
 # (Skill detection from resumes is a later AI phase.)
 DEFAULT_SKILLS = [

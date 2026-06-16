@@ -18,7 +18,7 @@ from ..models.sync import SheetSyncRun, SyncState
 from .client import get_spreadsheet, is_configured
 
 # Tab headers (exact column orders requested).
-JOBS_HEADER = ["Date", "Company", "Role", "Location", "Source", "Score", "Resume Selected", "Confidence", "Status", "Apply URL"]
+JOBS_HEADER = ["Date", "Company", "Role", "Location", "Source", "Score", "Resume Selected", "Confidence", "Status", "Apply URL", "Contact Email"]
 APPLICATIONS_HEADER = ["Date", "Company", "Role", "Resume Used", "Cover Letter", "Status", "Notes"]
 SOURCES_HEADER = ["Source", "Enabled", "Health", "Last Run", "Jobs Found"]
 RUNS_HEADER = ["Run Date", "Duration (ms)", "Jobs Found", "Filtered", "Scored", "Errors"]
@@ -77,6 +77,7 @@ def _jobs_rows(db: Session, cursor: datetime | None):
             _fmt(j.discovered_at), j.company, j.title, j.location or "", j.source,
             s.total_score if s else "", s.matched_resume_category if s else "",
             s.resume_confidence if s else "", j.status, j.apply_url or "",
+            j.contact_email or "",
         ])
         if newest is None or (j.discovered_at and j.discovered_at > newest):
             newest = j.discovered_at
