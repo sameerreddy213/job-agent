@@ -1,0 +1,157 @@
+{
+  "info": {
+    "name": "job-agent API",
+    "description": "Validation collection for the job-agent backend (Phases 1-3). Run 'Auth > Login' first; it stores accessToken/refreshToken as collection variables used by all other requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "adminUser", "value": "admin" },
+    { "key": "adminPass", "value": "change_me_strong_password" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        { "name": "GET /health", "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{baseUrl}}/health" } },
+        { "name": "GET /health/db", "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{baseUrl}}/health/db" } },
+        { "name": "GET /health/sources", "request": { "method": "GET", "url": "{{baseUrl}}/health/sources" } }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', b.access_token);",
+                  "pm.collectionVariables.set('refreshToken', b.refresh_token);",
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "username", "value": "{{adminUser}}" },
+                { "key": "password", "value": "{{adminPass}}" }
+              ]
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "POST /auth/refresh",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}" },
+            "url": "{{baseUrl}}/auth/refresh"
+          }
+        },
+        {
+          "name": "POST /auth/logout",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}" },
+            "url": "{{baseUrl}}/auth/logout"
+          }
+        },
+        { "name": "GET /auth/me", "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" } }
+      ]
+    },
+    {
+      "name": "Admin & Sources",
+      "item": [
+        { "name": "POST /admin/run-now", "request": { "method": "POST", "url": "{{baseUrl}}/admin/run-now" } },
+        { "name": "GET /sources", "request": { "method": "GET", "url": "{{baseUrl}}/sources" } },
+        {
+          "name": "PATCH /sources/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"enabled\": true,\n  \"config\": { \"boards\": [\"example\"] }\n}" },
+            "url": "{{baseUrl}}/sources/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jobs & Queue",
+      "item": [
+        { "name": "GET /jobs", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/jobs?limit=20", "host": ["{{baseUrl}}"], "path": ["jobs"], "query": [{ "key": "limit", "value": "20" }] } } },
+        { "name": "GET /jobs/:id", "request": { "method": "GET", "url": "{{baseUrl}}/jobs/REPLACE_WITH_ID" } },
+        { "name": "GET /queue", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/queue?limit=50", "host": ["{{baseUrl}}"], "path": ["queue"], "query": [{ "key": "limit", "value": "50" }] } } },
+        { "name": "GET /queue/counts", "request": { "method": "GET", "url": "{{baseUrl}}/queue/counts" } }
+      ]
+    },
+    {
+      "name": "Dashboard & Analytics",
+      "item": [
+        { "name": "GET /dashboard/summary", "request": { "method": "GET", "url": "{{baseUrl}}/dashboard/summary" } },
+        { "name": "GET /analytics/overview", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/analytics/overview?days=30&top_n=10", "host": ["{{baseUrl}}"], "path": ["analytics", "overview"], "query": [{ "key": "days", "value": "30" }, { "key": "top_n", "value": "10" }] } } }
+      ]
+    },
+    {
+      "name": "Settings & Audit",
+      "item": [
+        { "name": "GET /settings", "request": { "method": "GET", "url": "{{baseUrl}}/settings" } },
+        { "name": "GET /settings/blacklist/companies", "request": { "method": "GET", "url": "{{baseUrl}}/settings/blacklist/companies" } },
+        {
+          "name": "POST /settings/blacklist/companies",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"company\": \"Initech\",\n  \"reason\": \"not interested\"\n}" },
+            "url": "{{baseUrl}}/settings/blacklist/companies"
+          }
+        },
+        { "name": "GET /settings/blacklist/keywords", "request": { "method": "GET", "url": "{{baseUrl}}/settings/blacklist/keywords" } },
+        { "name": "GET /audit", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/audit?limit=50", "host": ["{{baseUrl}}"], "path": ["audit"], "query": [{ "key": "limit", "value": "50" }] } } }
+      ]
+    },
+    {
+      "name": "Profile & Resumes",
+      "item": [
+        { "name": "GET /profile", "request": { "method": "GET", "url": "{{baseUrl}}/profile" } },
+        {
+          "name": "PUT /profile",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"full_name\": \"Tamalampudi Sameer Reddy\",\n  \"email\": \"sameerreddy213@gmail.com\",\n  \"phone\": \"+91 9652877199\",\n  \"location\": \"Andhra Pradesh, India\",\n  \"notice_period\": \"Immediate\",\n  \"experience_level\": \"Fresher\",\n  \"work_auth\": \"India\",\n  \"relocation\": true,\n  \"expected_ctc\": \"8 LPA\"\n}" },
+            "url": "{{baseUrl}}/profile"
+          }
+        },
+        { "name": "GET /resumes", "request": { "method": "GET", "url": "{{baseUrl}}/resumes" } },
+        { "name": "GET /resumes/summary", "request": { "method": "GET", "url": "{{baseUrl}}/resumes/summary" } },
+        {
+          "name": "POST /resumes/:category/versions",
+          "request": {
+            "method": "POST",
+            "body": { "mode": "formdata", "formdata": [{ "key": "file", "type": "file", "src": "" }] },
+            "url": "{{baseUrl}}/resumes/SDE/versions"
+          }
+        }
+      ]
+    }
+  ]
+}

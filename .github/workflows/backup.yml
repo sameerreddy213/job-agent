@@ -1,0 +1,43 @@
+# ============================================================
+# Daily integrity / backup verification workflow.
+# Runs in GitHub (not on the VM). It does NOT touch secrets or data —
+# it verifies the repo is intact and that .gitignore still excludes
+# sensitive paths. VM-side data backup is handled by scripts/backup-db.sh.
+# ============================================================
+name: daily-backup-check
+
+on:
+  schedule:
+    - cron: "0 1 * * *"   # 01:00 UTC daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure no secrets are tracked
+        run: |
+          set -e
+          BAD=$(git ls-files | grep -E '(^|/)\.env$|resumes/|\.sql\.gz$|secrets/|\.pem$|\.key$' || true)
+          if [ -n "$BAD" ]; then
+            echo "::error::Sensitive files are tracked in git:"
+            echo "$BAD"
+            exit 1
+          fi
+          echo "OK: no sensitive files tracked."
+
+      - name: Validate compose file
+        uses: docker/setup-compose-action@v1
+      - run: docker compose -f docker-compose.yml config -q
+        env:
+          DOMAIN: example.com
+          ACME_EMAIL: ci@example.com
+          POSTGRES_DB: ci
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
