@@ -52,5 +52,15 @@ class Settings(BaseSettings):
     # run_health WARNING if a source returns fewer than this many jobs
     HEALTH_MIN_JOBS_WARNING: int = 1
 
+    # AI provider (Phase 8D / WI-3) — optional. When AI_PROVIDER=openrouter and
+    # AI_API_KEY is set, materials are LLM-polished; otherwise deterministic
+    # templates are used unchanged. OpenRouter is OpenAI-compatible.
+    AI_PROVIDER: str = ""           # "" (off) | "openrouter"
+    AI_API_KEY: str = ""
+    AI_MODEL: str = "openai/gpt-4o-mini"
+    AI_BASE_URL: str = "https://openrouter.ai/api/v1"
+    AI_MAX_TOKENS: int = 900
+    AI_TIMEOUT_SECONDS: int = 30
+
 
 settings = Settings()

@@ -161,6 +161,7 @@ export function ResumeManagement() {
               <input
                 ref={newFileRef}
                 type="file"
+                accept=".pdf,.doc,.docx,.txt"
                 className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-indigo-500 dark:text-slate-300"
               />
             </Field>
@@ -261,6 +262,7 @@ function ResumeCard({
         <input
           ref={fileRef}
           type="file"
+          accept=".pdf,.doc,.docx,.txt"
           className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-200 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-300 dark:text-slate-300 dark:file:bg-slate-700 dark:file:text-slate-200 dark:hover:file:bg-slate-600"
         />
         <div className="flex gap-2">

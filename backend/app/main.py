@@ -28,7 +28,9 @@ from .middleware import RequestLoggingMiddleware
 
 configure_logging(service="api")
 
-app = FastAPI(title="job-agent API", version="0.4.0-phase4")
+# root_path="/api" so the Swagger UI (served under nginx's /api/ prefix) fetches
+# the spec from /api/openapi.json instead of the SPA-served site root.
+app = FastAPI(title="Sameer's Job Agent API", version="0.8.0", root_path="/api")
 app.add_middleware(RequestLoggingMiddleware)
 
 # Core (Phase 1-2)

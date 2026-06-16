@@ -106,13 +106,26 @@ def upload_version(
         + 1
     )
 
+    # Validate type + size before persisting.
+    safe_name = os.path.basename(file.filename or f"resume_{uuid.uuid4().hex}")
+    ext = os.path.splitext(safe_name)[1].lower()
+    if ext not in {".pdf", ".doc", ".docx", ".txt"}:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Unsupported file type '{ext or 'unknown'}' (use PDF, DOC, DOCX, or TXT)",
+        )
+    data = file.file.read()
+    if not data:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Uploaded file is empty")
+    if len(data) > 5 * 1024 * 1024:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Resume exceeds the 5 MB limit")
+
     # Persist the uploaded file to the resumes volume (git-ignored on disk).
     cat_dir = os.path.join(settings.RESUME_DIR, category)
     os.makedirs(cat_dir, exist_ok=True)
-    safe_name = os.path.basename(file.filename or f"resume_{uuid.uuid4().hex}")
     dest = os.path.join(cat_dir, f"v{next_version}_{safe_name}")
     with open(dest, "wb") as out:
-        out.write(file.file.read())
+        out.write(data)
 
     # Phase 5A: parse the resume and extract skills + detected category (rule engine).
     text = parse_resume_file(dest)

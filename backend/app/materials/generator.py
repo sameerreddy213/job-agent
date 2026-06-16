@@ -3,6 +3,7 @@ import os
 
 from sqlalchemy.orm import Session
 
+from ..ai import ai_enabled, polish_answer, polish_cover_letter
 from ..config import settings
 from ..intelligence import extract_skills
 from ..models.job import Job
@@ -55,6 +56,22 @@ def generate_materials(
     cover_text = build_cover_letter(profile, job, skills) if cover_letter else None
     summary_text = build_resume_summary(profile, category, skills)
     answers = build_application_answers(profile, job, skills)
+
+    # Optional AI polish (WI-3). No-op unless AI_PROVIDER=openrouter + key set;
+    # any failure leaves the deterministic text untouched.
+    if ai_enabled():
+        if cover_text:
+            improved = polish_cover_letter(cover_text, job.company, job.title)
+            if improved:
+                cover_text = improved
+        # Only the open-ended narrative answer is rephrased; factual answers
+        # (CTC, dates, education, links, etc.) stay verbatim.
+        for qa in answers:
+            if qa.get("question") == "Why are you interested in this role?":
+                improved_ans = polish_answer(qa["question"], qa.get("answer", ""), job.company, job.title)
+                if improved_ans:
+                    qa["answer"] = improved_ans
+                break
 
     sections: list[tuple[str, str]] = []
     if cover_text:
