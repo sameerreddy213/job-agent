@@ -42,7 +42,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             className={cn(
-              "rounded-lg px-4 py-3 text-sm shadow-lg",
+              "animate-slide-in-right rounded-lg px-4 py-3 text-sm shadow-lg",
               t.kind === "success" && "bg-emerald-600 text-white",
               t.kind === "error" && "bg-red-600 text-white",
               t.kind === "info" && "bg-slate-800 text-white dark:bg-slate-700",

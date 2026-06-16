@@ -77,7 +77,7 @@ export function ApplicationReadiness() {
       ) : (
         <div className="mb-6 grid gap-3">
           {readyQueue.map((i) => (
-            <Card key={i.id}>
+            <Card key={i.id} className="card-hover">
               <div className="flex cursor-pointer items-start justify-between gap-3" onClick={() => open(i.id)}>
                 <div className="min-w-0">
                   <p className="truncate font-medium">{i.title ?? "—"}</p>
@@ -102,7 +102,7 @@ export function ApplicationReadiness() {
       ) : (
         <div className="grid gap-3">
           {items.map((i) => (
-            <Card key={i.id}>
+            <Card key={i.id} className="card-hover">
               <div className="flex cursor-pointer items-start justify-between gap-3" onClick={() => open(i.id)}>
                 <div className="min-w-0">
                   <p className="truncate font-medium">{i.title ?? "—"}</p>

@@ -137,6 +137,7 @@ export function Analytics() {
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <ChartCard title="Jobs Per Day" data={data.jobs_per_day} xKey="day" />
+            <ChartCard title="Applications Per Day" data={data.applications_per_day} xKey="day" />
             <ChartCard title="Top Companies" data={data.top_companies} xKey="label" />
             <ChartCard title="Top Locations" data={data.top_locations} xKey="label" />
             <ChartCard title="Top Skills" data={data.top_skills} xKey="label" />

@@ -198,7 +198,7 @@ export function Queue() {
 
           <div className="grid gap-3">
             {visible.map((job) => (
-              <Card key={job.id}>
+              <Card key={job.id} className="card-hover">
                 <div className="flex items-start gap-3">
                   <input
                     type="checkbox"

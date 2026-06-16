@@ -22,7 +22,7 @@ export function Card({ className, children }: { className?: string; children: Re
   return (
     <div
       className={cn(
-        "rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900",
+        "animate-fade-in rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-theme dark:border-slate-800 dark:bg-slate-900",
         className,
       )}
     >
@@ -61,7 +61,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed",
+        "inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100",
         VARIANT[variant],
         className,
       )}
@@ -115,6 +115,10 @@ export function Spinner() {
   );
 }
 
+export function Skeleton({ className }: { className?: string }) {
+  return <div className={cn("skeleton h-4 w-full", className)} />;
+}
+
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
     <Card className="text-center text-slate-500 dark:text-slate-400">
@@ -140,12 +144,12 @@ export function Modal({
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900"
+        className="animate-scale-in max-h-[85vh] w-full max-w-lg overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -220,9 +224,9 @@ export function Stat({ label, value, tone = "slate" }: { label: string; value: R
     indigo: "text-indigo-600 dark:text-indigo-400",
   };
   return (
-    <Card>
+    <Card className="card-hover">
       <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
-      <p className={cn("mt-1 text-2xl font-bold", accent[tone])}>{value}</p>
+      <p className={cn("mt-1 text-2xl font-bold tabular-nums", accent[tone])}>{value}</p>
     </Card>
   );
 }

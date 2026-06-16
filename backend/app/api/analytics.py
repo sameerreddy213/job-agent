@@ -4,8 +4,10 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from ..applications import AppState
 from ..constants import DEFAULT_SKILLS
 from ..deps import get_current_user, get_db
+from ..models.application import Application, ApplicationEvent
 from ..models.job import Job, JobScore
 from ..models.resume import Resume, ResumeVersion
 from ..models.user import User
@@ -33,6 +35,32 @@ def _jobs_per_day(db: Session, since) -> list[DayPoint]:
         .all()
     )
     return [DayPoint(day=str(r.d), count=r.c) for r in rows]
+
+
+def _apps_per_day(db: Session, since) -> list[DayPoint]:
+    rows = (
+        db.query(func.date(Application.created_at).label("d"), func.count().label("c"))
+        .filter(Application.created_at >= since)
+        .group_by("d")
+        .order_by("d")
+        .all()
+    )
+    return [DayPoint(day=str(r.d), count=r.c) for r in rows]
+
+
+def _interview_conversion_rate(db: Session) -> float:
+    """% of submitted applications that reached an interview."""
+    def ev(state: str) -> int:
+        return (
+            db.query(func.count(func.distinct(ApplicationEvent.application_id)))
+            .filter(ApplicationEvent.new_state == state)
+            .scalar()
+            or 0
+        )
+
+    submitted = ev(AppState.SUBMITTED)
+    interviews = ev(AppState.INTERVIEW)
+    return round(interviews / submitted * 100, 1) if submitted else 0.0
 
 
 def _top(db: Session, column, limit: int) -> list[CountPoint]:
@@ -88,13 +116,14 @@ def overview(
     top_n: int = Query(10, ge=1, le=50),
 ):
     since = datetime.now(timezone.utc) - timedelta(days=days)
+    total_apps = db.query(func.count(Application.id)).scalar() or 0
     return AnalyticsOverview(
         jobs_per_day=_jobs_per_day(db, since),
-        applications_per_day=[],  # populated in Phase 5
+        applications_per_day=_apps_per_day(db, since),
         top_companies=_top(db, Job.company, top_n),
         top_locations=_top(db, Job.location, top_n),
         top_skills=_top_skills(db, top_n),
         resume_stats=_resume_stats(db),
-        interview_conversion_rate=0.0,  # populated in Phase 5
-        note=_APPLICATIONS_NOTE,
+        interview_conversion_rate=_interview_conversion_rate(db),
+        note=None if total_apps else _APPLICATIONS_NOTE,
     )

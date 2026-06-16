@@ -11,3 +11,78 @@ body,
 body {
   @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
 }
+
+/* Smooth theme (light/dark) transitions. */
+body,
+.transition-theme {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+/* Thin, subtle scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 0.5) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgb(148 163 184 / 0.5);
+  border-radius: 9999px;
+}
+
+@layer utilities {
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(16px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
+
+  .animate-fade-in { animation: fadeIn 0.25s ease-out both; }
+  .animate-slide-up { animation: slideUp 0.3s ease-out both; }
+  .animate-scale-in { animation: scaleIn 0.18s ease-out both; }
+  .animate-slide-in-right { animation: slideInRight 0.25s ease-out both; }
+
+  /* Skeleton shimmer block for loading states. */
+  .skeleton {
+    @apply relative overflow-hidden rounded-md bg-slate-200 dark:bg-slate-800;
+  }
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.25), transparent);
+    animation: shimmer 1.4s infinite;
+  }
+
+  /* Lift on hover for interactive cards. */
+  .card-hover {
+    @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-md;
+  }
+}
+
+/* Honor users who prefer less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

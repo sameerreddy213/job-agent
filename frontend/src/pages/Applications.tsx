@@ -135,7 +135,7 @@ export function Applications() {
       ) : (
         <div className="grid gap-3">
           {apps.map((a) => (
-            <Card key={a.id}>
+            <Card key={a.id} className="card-hover">
               <div
                 className="flex cursor-pointer items-start justify-between gap-3"
                 onClick={() => open(a.id)}
