@@ -12,6 +12,8 @@ export function Sources() {
   const [health, setHealth] = useState<Record<string, RunHealthOut>>({});
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [cfgText, setCfgText] = useState<Record<number, string>>({});
+  const [savingCfg, setSavingCfg] = useState<number | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -47,6 +49,27 @@ export function Sources() {
       toast.error("Failed to update source");
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const saveConfig = async (source: SourceOut) => {
+    const text = cfgText[source.id] ?? JSON.stringify(source.config, null, 2);
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      toast.error("Config must be valid JSON");
+      return;
+    }
+    setSavingCfg(source.id);
+    try {
+      const updated = await SourcesApi.update(source.id, { config: parsed });
+      setSources((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+      toast.success(`${updated.name} config saved`);
+    } catch {
+      toast.error("Failed to save config");
+    } finally {
+      setSavingCfg(null);
     }
   };
 
@@ -120,6 +143,26 @@ export function Sources() {
 
                   {errorText && <p className="mt-2 text-xs text-red-500">{errorText}</p>}
                 </div>
+
+                <details className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+                  <summary className="cursor-pointer text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Edit config (boards / companies / search)
+                  </summary>
+                  <textarea
+                    value={cfgText[source.id] ?? JSON.stringify(source.config, null, 2)}
+                    onChange={(e) => setCfgText((prev) => ({ ...prev, [source.id]: e.target.value }))}
+                    spellCheck={false}
+                    className="mt-2 h-36 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800"
+                  />
+                  <div className="mt-2 flex justify-end">
+                    <Button variant="secondary" onClick={() => saveConfig(source)} disabled={savingCfg === source.id}>
+                      {savingCfg === source.id ? "Saving…" : "Save config"}
+                    </Button>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-400">
+                    e.g. {"{"}"boards": ["razorpay", "postman"]{"}"} · lever uses "companies" · linkedin uses "input".
+                  </p>
+                </details>
               </Card>
             );
           })}

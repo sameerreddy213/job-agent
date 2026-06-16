@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     # outside India; unknown/empty locations are kept for review.
     INDIA_ONLY: bool = True
 
+    # Apify (LinkedIn scraping). Token is env-only (secret); the actor + search
+    # input live in the "linkedin" Source.config.
+    APIFY_TOKEN: str = ""
+    APIFY_DEFAULT_ACTOR: str = "misceres~linkedin-jobs-scraper"
+
     # AI provider (Phase 8D / WI-3) — optional. When AI_PROVIDER=openrouter and
     # AI_API_KEY is set, materials are LLM-polished; otherwise deterministic
     # templates are used unchanged. OpenRouter is OpenAI-compatible.

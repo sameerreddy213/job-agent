@@ -23,8 +23,11 @@ class AshbyConnector(BaseConnector):
         jobs: list[dict] = []
         with httpx.Client(timeout=settings.HTTP_TIMEOUT_SECONDS) as client:
             for board in self._boards():
-                resp = client.get(f"{BASE}/{board}")
-                resp.raise_for_status()
+                try:
+                    resp = client.get(f"{BASE}/{board}")
+                    resp.raise_for_status()
+                except Exception:
+                    continue  # bad/unknown board token — skip, don't abort the run
                 for j in resp.json().get("jobs", []):
                     j["_board"] = board
                     jobs.append(j)

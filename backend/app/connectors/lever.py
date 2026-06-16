@@ -23,8 +23,11 @@ class LeverConnector(BaseConnector):
         jobs: list[dict] = []
         with httpx.Client(timeout=settings.HTTP_TIMEOUT_SECONDS) as client:
             for company in self._companies():
-                resp = client.get(f"{BASE}/{company}", params={"mode": "json"})
-                resp.raise_for_status()
+                try:
+                    resp = client.get(f"{BASE}/{company}", params={"mode": "json"})
+                    resp.raise_for_status()
+                except Exception:
+                    continue  # bad/unknown company token — skip, don't abort the run
                 for j in resp.json():
                     j["_company"] = company
                     jobs.append(j)
