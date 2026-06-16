@@ -6,14 +6,56 @@ or uses Playwright. Submission stays a manual, human action; SUBMITTED merely
 """
 from datetime import datetime, timezone
 
+from sqlalchemy import exists, func
 from sqlalchemy.orm import Session
 
-from .ats import detect_ats
+from .ats import AtsType, detect_ats
 from .audit import write_audit
 from .materials import GenerationError, generate_materials
 from .models.application import Application, ApplicationAnswer, ApplicationDocument, ApplicationEvent
 from .models.job import Job
 from .models.material import Material
+
+
+def readiness_counts(db: Session) -> dict:
+    """Aggregate readiness/ATS counts in SQL (no per-row Python loop).
+
+    Mirrors ats.evaluate_readiness: an application is "ready" when it has
+    documents + a resume + answers AND needs no manual fields. Used by /metrics
+    and the ATS breakdown, which are hit frequently."""
+    total = db.query(func.count(Application.id)).scalar() or 0
+    by_ats = dict(
+        db.query(Application.ats_type, func.count(Application.id)).group_by(Application.ats_type).all()
+    )
+    ats_unknown = by_ats.get(AtsType.UNKNOWN, 0)
+    manual = (
+        db.query(func.count(Application.id))
+        .filter(Application.requires_manual_fields.is_(True))
+        .scalar()
+        or 0
+    )
+    has_docs = exists().where(ApplicationDocument.application_id == Application.id)
+    has_answers = exists().where(ApplicationAnswer.application_id == Application.id)
+    ready = (
+        db.query(func.count(Application.id))
+        .filter(
+            Application.requires_manual_fields.is_(False),
+            Application.resume_category.isnot(None),
+            Application.resume_category != "",
+            has_docs,
+            has_answers,
+        )
+        .scalar()
+        or 0
+    )
+    return {
+        "total": total,
+        "ats_detected": total - ats_unknown,
+        "ats_unknown": ats_unknown,
+        "ready_to_apply": ready,
+        "manual_review_required": manual,
+        "by_ats": by_ats,
+    }
 
 
 class AppState:

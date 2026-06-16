@@ -1,12 +1,14 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from ..applications import get_or_create, provision_for_job
 from ..audit import write_audit
 from ..constants import ALLOWED_CATEGORIES
+from ..database import SessionLocal
 from ..deps import get_current_user, get_db
 from ..intelligence import extract_skills, recommend_resume
 from ..intelligence.matching import ResumeProfile
@@ -15,8 +17,21 @@ from ..models.resume import ResumeVersion
 from ..models.user import User
 from ..models.workflow import JobStateHistory
 from ..schemas.job import JobDetailOut, JobOut, JobStateHistoryOut
-from ..applications import provision_for_job
 from ..workflow import InvalidTransition, State, snooze as snooze_job, transition
+
+
+def _provision_materials_bg(job_id: uuid.UUID, actor: str) -> None:
+    """Background task: generate materials + advance the application to READY in
+    a fresh session (the request's session is closed once the response is sent)."""
+    db = SessionLocal()
+    try:
+        job = db.get(Job, job_id)
+        if job is not None:
+            provision_for_job(db, job, actor=actor)
+    except Exception:  # noqa: BLE001 - background work must never crash the worker
+        db.rollback()
+    finally:
+        db.close()
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -207,15 +222,23 @@ def _get_job(db: Session, job_id: uuid.UUID) -> Job:
 
 
 @router.post("/{job_id}/approve", response_model=JobDetailOut)
-def approve(job_id: uuid.UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def approve(
+    job_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     job = _get_job(db, job_id)
     _transition_or_400(db, job, State.APPROVED, user.username, "approved")
-    # Phase 8A: provision an application (generate materials + move to READY).
-    # Best-effort — a provisioning hiccup must not fail the approval itself.
+    # Create the application shell synchronously (fast, no file IO) so it appears
+    # immediately; generate materials (DOCX/PDF) in the background so approve stays
+    # snappy. The app starts at NOT_STARTED and flips to READY when materials land.
     try:
-        provision_for_job(db, job, actor=user.username)
-    except Exception:  # noqa: BLE001 - provisioning is non-critical to approval
+        get_or_create(db, job, actor=user.username)
+        db.commit()
+    except Exception:  # noqa: BLE001 - shell creation is non-critical to approval
         db.rollback()
+    background_tasks.add_task(_provision_materials_bg, job.id, user.username)
     db.refresh(job)
     return job
 

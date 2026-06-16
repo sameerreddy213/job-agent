@@ -15,7 +15,7 @@ from ..applications import (
     get_or_create,
     transition,
 )
-from ..applications import provision_for_job
+from ..applications import provision_for_job, readiness_counts
 from ..ats import AtsDetection, AtsType, evaluate_readiness
 from ..audit import write_audit
 from ..deps import get_current_user, get_db
@@ -222,27 +222,14 @@ def ready_queue(db: Session = Depends(get_db), user: User = Depends(get_current_
 
 @router.get("/ats-breakdown", response_model=AtsBreakdown)
 def ats_breakdown(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    apps = _all_with_children(db)
-    by_type: dict[str, int] = {}
-    detected = unknown = ready = manual = 0
-    for app in apps:
-        by_type[app.ats_type] = by_type.get(app.ats_type, 0) + 1
-        if app.ats_type == AtsType.UNKNOWN:
-            unknown += 1
-        else:
-            detected += 1
-        r = _readiness(app)
-        if r.ready:
-            ready += 1
-        if r.manual_review_required:
-            manual += 1
+    rc = readiness_counts(db)  # aggregated in SQL
     return AtsBreakdown(
-        total=len(apps),
-        detected=detected,
-        unknown=unknown,
-        ready_to_apply=ready,
-        manual_review_required=manual,
-        by_ats=[AtsCount(ats_type=k, count=v) for k, v in sorted(by_type.items())],
+        total=rc["total"],
+        detected=rc["ats_detected"],
+        unknown=rc["ats_unknown"],
+        ready_to_apply=rc["ready_to_apply"],
+        manual_review_required=rc["manual_review_required"],
+        by_ats=[AtsCount(ats_type=k, count=v) for k, v in sorted(rc["by_ats"].items())],
     )
 
 

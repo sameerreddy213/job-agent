@@ -6,10 +6,9 @@ Exposed counters:
   login_success, login_failure
 """
 from sqlalchemy import func
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
-from .applications import AppState
-from .ats import AtsDetection, AtsType, evaluate_readiness
+from .applications import AppState, readiness_counts
 from .models.application import Application, ApplicationEvent
 from .models.audit import AuditLog
 from .models.job import Job, JobScore, RunHealth
@@ -113,33 +112,12 @@ def compute_metrics(db: Session) -> dict[str, int]:
     offers = _app_ev(AppState.OFFER)
     rejections = _app_ev(AppState.REJECTED)
 
-    # ATS / readiness counters (Phase 8B).
-    ready_to_apply = manual_review_required = ats_detected = ats_unknown = 0
-    apps = (
-        db.query(Application)
-        .options(selectinload(Application.documents), selectinload(Application.answers))
-        .all()
-    )
-    for app in apps:
-        if app.ats_type == AtsType.UNKNOWN:
-            ats_unknown += 1
-        else:
-            ats_detected += 1
-        report = evaluate_readiness(
-            has_documents=len(app.documents) > 0,
-            resume_category=app.resume_category,
-            answer_count=len(app.answers),
-            ats=AtsDetection(
-                ats_type=app.ats_type, ats_version=app.ats_version,
-                application_url=app.application_url,
-                supports_easy_apply=app.supports_easy_apply,
-                requires_manual_fields=app.requires_manual_fields,
-            ),
-        )
-        if report.ready:
-            ready_to_apply += 1
-        if report.manual_review_required:
-            manual_review_required += 1
+    # ATS / readiness counters (Phase 8B) — aggregated in SQL.
+    rc = readiness_counts(db)
+    ready_to_apply = rc["ready_to_apply"]
+    manual_review_required = rc["manual_review_required"]
+    ats_detected = rc["ats_detected"]
+    ats_unknown = rc["ats_unknown"]
 
     packets_generated = (
         db.query(func.count(AuditLog.id)).filter(AuditLog.action == "application.packet_generated").scalar() or 0
