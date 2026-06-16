@@ -61,7 +61,16 @@ class Settings(BaseSettings):
     # templates are used unchanged. OpenRouter is OpenAI-compatible.
     AI_PROVIDER: str = ""           # "" (off) | "openrouter"
     AI_API_KEY: str = ""
-    AI_MODEL: str = "openai/gpt-4o-mini"
+    # Free-only model pool. The client rotates through these and switches to the
+    # next when one is rate-limited/unavailable. Only ":free" slugs are used.
+    AI_MODELS: str = (
+        "meta-llama/llama-3.3-70b-instruct:free,"
+        "google/gemini-2.0-flash-exp:free,"
+        "deepseek/deepseek-chat-v3-0324:free,"
+        "qwen/qwen-2.5-72b-instruct:free,"
+        "mistralai/mistral-small-3.1-24b-instruct:free"
+    )
+    AI_MODEL: str = ""              # optional single override; must be a ":free" slug
     AI_BASE_URL: str = "https://openrouter.ai/api/v1"
     AI_MAX_TOKENS: int = 900
     AI_TIMEOUT_SECONDS: int = 30
