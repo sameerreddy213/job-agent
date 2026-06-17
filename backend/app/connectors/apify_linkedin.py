@@ -98,6 +98,41 @@ class NaukriConnector(_ApifyConnector):
         "fetchDetails": True,   # include JD text (-> email extraction)
     }
 
+    def normalize_job(self, raw: dict) -> NormalizedJob:
+        # Naukri's actor nests the real fields under "jobDetails".
+        jd = raw.get("jobDetails") or {}
+        if not jd:
+            return super().normalize_job(raw)
+        title = (jd.get("title") or "").strip()
+        company = (jd.get("staticCompanyName") or (jd.get("companyDetail") or {}).get("name") or "unknown").strip()
+        description = jd.get("description") or jd.get("shortDescription")
+        apply_url = jd.get("staticUrl") or jd.get("companyApplyUrl") or jd.get("applyRedirectUrl")
+        if apply_url and not str(apply_url).startswith("http"):
+            apply_url = "https://www.naukri.com/" + str(apply_url).lstrip("/")
+        # locations: list of {label/name/city} or strings.
+        loc = None
+        locs = jd.get("locations")
+        if isinstance(locs, list) and locs:
+            parts = []
+            for item in locs:
+                if isinstance(item, dict):
+                    parts.append(item.get("label") or item.get("name") or item.get("city") or "")
+                elif isinstance(item, str):
+                    parts.append(item)
+            loc = ", ".join(p for p in parts if p) or None
+        return NormalizedJob(
+            job_id=str(jd.get("jobId") or apply_url or f"{company}-{title}"),
+            source=self.source,
+            company=company,
+            title=title,
+            location=loc,
+            description=description if isinstance(description, str) else None,
+            apply_url=apply_url,
+            employment_type=jd.get("employmentType"),
+            remote_status=str(jd.get("wfhType")) if jd.get("wfhType") else None,
+            raw=raw,
+        )
+
 
 class InternshalaConnector(_ApifyConnector):
     source = "internshala"
