@@ -5,6 +5,7 @@ Google Sheet (tabs: Jobs, Applications, Sources, Runs, Resume Stats) for
 reporting/review. Auth via env-based service-account credentials.
 """
 from .client import is_configured
+from .pull import pull_changes
 from .sync import sync_all
 
-__all__ = ["sync_all", "is_configured"]
+__all__ = ["sync_all", "pull_changes", "is_configured"]

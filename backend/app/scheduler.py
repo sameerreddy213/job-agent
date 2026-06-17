@@ -15,7 +15,7 @@ from .config import settings
 from .database import SessionLocal
 from .models.job import RunHealth
 from .pipeline.runner import run_pipeline
-from .sheets import is_configured, sync_all
+from .sheets import is_configured, pull_changes, sync_all
 
 logger = logging.getLogger("worker")
 IST = ZoneInfo("Asia/Kolkata")
@@ -84,6 +84,15 @@ def sync_sheets_once() -> None:
         return
     db = SessionLocal()
     try:
+        # Two-way: first pull manual Status edits from the sheet into the DB
+        # (so the dashboard reflects them, and before sync overwrites tabs).
+        pulled = pull_changes(db)
+        if pulled.get("jobs") or pulled.get("applications"):
+            logger.info(
+                "sheets writeback applied",
+                extra={"service": "worker", "action": "sheets.pull",
+                       "status": pulled.get("status")},
+            )
         result = sync_all(db)
         logger.info(
             "sheets sync complete",
