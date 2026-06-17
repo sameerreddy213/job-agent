@@ -104,7 +104,7 @@ class NaukriConnector(_ApifyConnector):
         if not jd:
             return super().normalize_job(raw)
         title = (jd.get("title") or "").strip()
-        company = (jd.get("staticCompanyName") or (jd.get("companyDetail") or {}).get("name") or "unknown").strip()
+        company = ((jd.get("companyDetail") or {}).get("name") or jd.get("staticCompanyName") or "unknown").strip()
         description = jd.get("description") or jd.get("shortDescription")
         apply_url = jd.get("staticUrl") or jd.get("companyApplyUrl") or jd.get("applyRedirectUrl")
         if apply_url and not str(apply_url).startswith("http"):
