@@ -25,11 +25,17 @@ STARTER_CONFIG: dict[str, dict] = {
         "leadsquared", "darwinbox", "browserstack", "chargebee",
     ]},
     "ashby": {"boards": ["razorpay", "zepto"]},
-    "linkedin": {"input": {
-        "title": "software engineer fresher",
-        "location": "India",
-        "rows": 50,
-    }},
+    "linkedin": {
+        "actor": "curious_coder~linkedin-jobs-scraper",
+        "input": {
+            "urls": [
+                "https://www.linkedin.com/jobs/search/"
+                "?keywords=software%20engineer&location=India&f_E=1%2C2&f_TPR=r2592000"
+            ],
+            "count": 50,
+            "scrapeCompany": False,
+        },
+    },
 }
 
 

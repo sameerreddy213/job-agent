@@ -19,12 +19,15 @@ from .base import BaseConnector, HealthResult, NormalizedJob
 
 _RUN_SYNC = "https://api.apify.com/v2/acts/{actor}/run-sync-get-dataset-items"
 
-# Default search: fresher software roles in India. Override via config["input"].
+# Default search for the curious_coder actor: entry-level/internship (f_E=1,2)
+# software roles in India, posted in the last 30 days. Override via config["input"].
 _DEFAULT_INPUT = {
-    "title": "software engineer fresher",
-    "location": "India",
-    "rows": 50,
-    "publishedAt": "r2592000",  # last 30 days (actor-dependent; ignored if unknown)
+    "urls": [
+        "https://www.linkedin.com/jobs/search/"
+        "?keywords=software%20engineer&location=India&f_E=1%2C2&f_TPR=r2592000"
+    ],
+    "count": 50,
+    "scrapeCompany": False,
 }
 
 
