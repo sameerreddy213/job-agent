@@ -21,12 +21,25 @@ from .client import get_spreadsheet, is_configured
 from .sync import (
     APP_STATUS_OPTIONS,
     APPLICATIONS_HEADER,
-    JOB_STATUS_OPTIONS,
     JOBS_HEADER,
     _retry,
 )
 
 ACTOR = "google-sheet"
+
+# The Jobs tab is append-only, so old rows keep the status they had when written
+# while the pipeline keeps advancing the DB (DISCOVERED->FILTERED->SCORED->
+# REVIEW_QUEUE). To avoid reverting that automatic progress, we only write back
+# *manual-action* statuses — the ones a person sets deliberately. Auto/transient
+# pipeline states are ignored on writeback. (Applications tab is overwritten each
+# sync, so it has no stale rows and all its statuses are honored.)
+JOB_MANUAL_STATUSES = {
+    workflow.State.APPROVED,
+    workflow.State.REJECTED,
+    workflow.State.ARCHIVED,
+    workflow.State.READY_TO_APPLY,
+    workflow.State.APPLIED,
+}
 
 
 def _col(header: list[str], name: str) -> int:
@@ -59,7 +72,7 @@ def _pull_jobs(db: Session, ss) -> int:
         if len(row) <= c_status:
             continue
         new_status = (row[c_status] or "").strip()
-        if new_status not in JOB_STATUS_OPTIONS:
+        if new_status not in JOB_MANUAL_STATUSES:
             continue
         url = row[c_url].strip() if len(row) > c_url else ""
         job = by_url.get(url) if url else None
