@@ -1,16 +1,12 @@
-"""LinkedIn jobs via an Apify actor.
+"""Apify-backed connectors (LinkedIn, Naukri, Internshala).
 
-We don't scrape LinkedIn directly (anti-bot + ToS); instead we run a hosted
-Apify actor and ingest its dataset. The actor + search input are configurable in
-the "linkedin" Source.config so this works with whichever LinkedIn-jobs actor you
-pick; field mapping tolerates the common output shapes across popular actors.
+We don't scrape these portals directly (anti-bot + ToS); instead we run hosted
+Apify actors and ingest their datasets. Each source picks its actor + input via
+Source.config (editable on the Sources page); field mapping tolerates the common
+output shapes across actors. APIFY_TOKEN is read from the environment (secret).
 
 Source.config:
-  {
-    "actor": "misceres~linkedin-jobs-scraper",   # optional; defaults to settings
-    "input": { ... actor-specific input ... }      # optional; sensible default built
-  }
-APIFY_TOKEN is read from the environment (secret).
+  { "actor": "<username~actor>", "input": { ...actor-specific input... } }
 """
 import httpx
 
@@ -18,17 +14,6 @@ from ..config import settings
 from .base import BaseConnector, HealthResult, NormalizedJob
 
 _RUN_SYNC = "https://api.apify.com/v2/acts/{actor}/run-sync-get-dataset-items"
-
-# Default search for the curious_coder actor: entry-level/internship (f_E=1,2)
-# software roles in India, posted in the last 30 days. Override via config["input"].
-_DEFAULT_INPUT = {
-    "urls": [
-        "https://www.linkedin.com/jobs/search/"
-        "?keywords=software%20engineer&location=India&f_E=1%2C2&f_TPR=r2592000"
-    ],
-    "count": 50,
-    "scrapeCompany": False,
-}
 
 
 def _first(raw: dict, *keys: str) -> str | None:
@@ -39,35 +24,39 @@ def _first(raw: dict, *keys: str) -> str | None:
     return None
 
 
-class ApifyLinkedInConnector(BaseConnector):
-    source = "linkedin"
+class _ApifyConnector(BaseConnector):
+    """Generic Apify actor runner. Subclasses set `source` + sensible defaults."""
+
+    source = "apify"
+    default_actor: str = ""
+    default_input: dict = {}
 
     def _actor(self) -> str:
-        return self.config.get("actor") or settings.APIFY_DEFAULT_ACTOR
+        return self.config.get("actor") or self.default_actor or settings.APIFY_DEFAULT_ACTOR
 
     def _input(self) -> dict:
-        return self.config.get("input") or _DEFAULT_INPUT
+        return self.config.get("input") or self.default_input
 
     def discover_jobs(self) -> list[dict]:
         if not settings.APIFY_TOKEN:
             raise RuntimeError("APIFY_TOKEN is not set")
         url = _RUN_SYNC.format(actor=self._actor())
-        with httpx.Client(timeout=max(120, settings.HTTP_TIMEOUT_SECONDS)) as client:
+        with httpx.Client(timeout=max(180, settings.HTTP_TIMEOUT_SECONDS)) as client:
             resp = client.post(url, params={"token": settings.APIFY_TOKEN}, json=self._input())
             resp.raise_for_status()
             items = resp.json()
         return items if isinstance(items, list) else []
 
     def normalize_job(self, raw: dict) -> NormalizedJob:
-        company = _first(raw, "companyName", "company", "company_name", "organization") or "unknown"
-        title = _first(raw, "title", "jobTitle", "position", "name") or ""
-        location = _first(raw, "location", "jobLocation", "formattedLocation", "place")
-        description = _first(raw, "descriptionText", "description", "jobDescription", "descriptionHtml")
-        apply_url = _first(raw, "applyUrl", "jobUrl", "url", "link", "jobPostingUrl")
-        remote = _first(raw, "workplaceType", "workType", "remote")
-        employment = _first(raw, "employmentType", "contractType", "jobType")
+        company = _first(raw, "companyName", "company", "company_name", "organization", "company_name_text") or "unknown"
+        title = _first(raw, "title", "jobTitle", "position", "name", "profile", "job_title") or ""
+        location = _first(raw, "location", "jobLocation", "formattedLocation", "place", "city")
+        description = _first(raw, "descriptionText", "description", "jobDescription", "descriptionHtml", "jd", "job_description")
+        apply_url = _first(raw, "applyUrl", "apply_url", "jobUrl", "job_url", "url", "link", "jobPostingUrl", "jdURL", "detailUrl")
+        remote = _first(raw, "workplaceType", "workMode", "work_mode", "remote")
+        employment = _first(raw, "employmentType", "contractType", "jobType", "job_type")
         return NormalizedJob(
-            job_id=str(raw.get("id") or raw.get("jobId") or apply_url or f"{company}-{title}"),
+            job_id=str(raw.get("id") or raw.get("jobId") or raw.get("jobid") or apply_url or f"{company}-{title}"),
             source=self.source,
             company=company,
             title=title,
@@ -83,3 +72,39 @@ class ApifyLinkedInConnector(BaseConnector):
         if not settings.APIFY_TOKEN:
             return HealthResult(ok=False, detail="APIFY_TOKEN not set")
         return HealthResult(ok=True, detail=f"actor {self._actor()}")
+
+
+class ApifyLinkedInConnector(_ApifyConnector):
+    source = "linkedin"
+    default_actor = "curious_coder~linkedin-jobs-scraper"
+    default_input = {
+        "urls": [
+            "https://www.linkedin.com/jobs/search/"
+            "?keywords=software%20engineer&location=India&f_E=1%2C2&f_TPR=r2592000"
+        ],
+        "count": 50,
+        "scrapeCompany": False,
+    }
+
+
+class NaukriConnector(_ApifyConnector):
+    source = "naukri"
+    default_actor = "muhammetakkurtt~naukri-job-scraper"
+    default_input = {
+        "keyword": "software developer",
+        "experience": "0",      # 0 years -> freshers
+        "freshness": "30",      # last 30 days
+        "maxJobs": 50,
+        "fetchDetails": True,   # include JD text (-> email extraction)
+    }
+
+
+class InternshalaConnector(_ApifyConnector):
+    source = "internshala"
+    default_actor = "bareezh_codes~internshala-scrapper"
+    default_input = {
+        "job_category": "Software Development",
+        "max_results": 50,
+        "pages_to_scrape": 5,
+        "work_from_home": True,
+    }

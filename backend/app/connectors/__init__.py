@@ -1,5 +1,9 @@
 """Connector registry. New sources register here without touching the pipeline."""
-from .apify_linkedin import ApifyLinkedInConnector
+from .apify_linkedin import (
+    ApifyLinkedInConnector,
+    InternshalaConnector,
+    NaukriConnector,
+)
 from .ashby import AshbyConnector
 from .base import BaseConnector, HealthResult, NormalizedJob
 from .greenhouse import GreenhouseConnector
@@ -12,10 +16,13 @@ CONNECTOR_REGISTRY: dict[str, type[BaseConnector]] = {
     "lever": LeverConnector,
     "ashby": AshbyConnector,
     "linkedin": ApifyLinkedInConnector,
+    "naukri": NaukriConnector,
+    "internshala": InternshalaConnector,
 }
 
 __all__ = [
     "BaseConnector", "NormalizedJob", "HealthResult",
     "GreenhouseConnector", "LeverConnector", "AshbyConnector", "SampleConnector",
-    "ApifyLinkedInConnector", "CONNECTOR_REGISTRY",
+    "ApifyLinkedInConnector", "NaukriConnector", "InternshalaConnector",
+    "CONNECTOR_REGISTRY",
 ]

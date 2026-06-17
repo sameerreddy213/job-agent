@@ -11,6 +11,8 @@ DEFAULT_SOURCES = [
     {"name": "lever", "kind": "ats", "apply_policy": "manual"},
     {"name": "ashby", "kind": "ats", "apply_policy": "manual"},
     {"name": "linkedin", "kind": "ats", "apply_policy": "manual"},
+    {"name": "naukri", "kind": "ats", "apply_policy": "manual"},
+    {"name": "internshala", "kind": "ats", "apply_policy": "manual"},
 ]
 
 # Best-effort India starter set. Some board tokens may be invalid — connectors
@@ -34,6 +36,25 @@ STARTER_CONFIG: dict[str, dict] = {
             ],
             "count": 50,
             "scrapeCompany": False,
+        },
+    },
+    "naukri": {
+        "actor": "muhammetakkurtt~naukri-job-scraper",
+        "input": {
+            "keyword": "software developer",
+            "experience": "0",
+            "freshness": "30",
+            "maxJobs": 50,
+            "fetchDetails": True,
+        },
+    },
+    "internshala": {
+        "actor": "bareezh_codes~internshala-scrapper",
+        "input": {
+            "job_category": "Software Development",
+            "max_results": 50,
+            "pages_to_scrape": 5,
+            "work_from_home": True,
         },
     },
 }
