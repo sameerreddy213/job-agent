@@ -41,7 +41,7 @@ class _ApifyConnector(BaseConnector):
         if not settings.APIFY_TOKEN:
             raise RuntimeError("APIFY_TOKEN is not set")
         url = _RUN_SYNC.format(actor=self._actor())
-        with httpx.Client(timeout=max(180, settings.HTTP_TIMEOUT_SECONDS)) as client:
+        with httpx.Client(timeout=max(300, settings.HTTP_TIMEOUT_SECONDS)) as client:
             resp = client.post(url, params={"token": settings.APIFY_TOKEN}, json=self._input())
             resp.raise_for_status()
             items = resp.json()
