@@ -109,10 +109,12 @@ class _JobSpyConnector(BaseConnector):
             employment_type=_clean(raw.get("job_type")),
             remote_status="remote" if raw.get("is_remote") else None,
             posted_date=posted_dt,
-            raw={"emails": raw.get("emails"), "site": raw.get("site")},
+            # Keep raw JSON-safe (JobSpy fields can be pandas NaN floats).
+            raw={
+                "site": _clean(raw.get("site")),
+                "contact_email": _first_email(raw.get("emails")),
+            },
         )
-        # Carry any parsed e-mail so the pipeline can surface it for outreach.
-        nj.raw["contact_email"] = _first_email(raw.get("emails"))
         return nj
 
     def health_check(self) -> HealthResult:
