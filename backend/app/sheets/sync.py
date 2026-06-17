@@ -24,6 +24,17 @@ SOURCES_HEADER = ["Source", "Enabled", "Health", "Last Run", "Jobs Found"]
 RUNS_HEADER = ["Run Date", "Duration (ms)", "Jobs Found", "Filtered", "Scored", "Errors"]
 RESUME_STATS_HEADER = ["Resume Category", "Jobs Matched", "Success Rate", "Last Used"]
 
+# Dropdown (data-validation) options for the Status columns. Must cover every
+# value the sync can write, or Sheets flags synced cells as invalid.
+JOB_STATUS_OPTIONS = [
+    "DISCOVERED", "FILTERED", "SCORED", "REVIEW_QUEUE", "APPROVED", "REJECTED",
+    "MATERIALS_GENERATED", "READY_TO_APPLY", "APPLIED", "FAILED", "ARCHIVED",
+]
+APP_STATUS_OPTIONS = [
+    "NOT_STARTED", "READY", "IN_PROGRESS", "SUBMITTED", "INTERVIEW",
+    "ASSESSMENT", "REJECTED", "OFFER", "ACCEPTED", "WITHDRAWN",
+]
+
 
 def _fmt(dt: datetime | None) -> str:
     return dt.strftime("%Y-%m-%d %H:%M") if dt else ""
@@ -59,6 +70,33 @@ def _overwrite(ws, header: list[str], rows: list[list]):
 def _append(ws, rows: list[list]):
     if rows:
         _retry(ws.append_rows, rows, value_input_option="USER_ENTERED")
+
+
+def _set_status_dropdown(ws, col_index: int, options: list[str]) -> None:
+    """Attach a dropdown (data validation) to one column, skipping the header row.
+
+    strict=False so manual notes aren't rejected; showCustomUi=True renders the
+    dropdown chip. Applies to the whole column (future appended rows included).
+    """
+    request = {
+        "setDataValidation": {
+            "range": {
+                "sheetId": ws.id,
+                "startRowIndex": 1,  # skip header
+                "startColumnIndex": col_index,
+                "endColumnIndex": col_index + 1,
+            },
+            "rule": {
+                "condition": {
+                    "type": "ONE_OF_LIST",
+                    "values": [{"userEnteredValue": v} for v in options],
+                },
+                "showCustomUi": True,
+                "strict": False,
+            },
+        }
+    }
+    _retry(ws.spreadsheet.batch_update, {"requests": [request]})
 
 
 # --------------------------------------------------------------------------- #
@@ -170,8 +208,10 @@ def sync_all(db: Session) -> dict:
         tabs: dict[str, int] = {}
 
         # Jobs (incremental append)
+        jobs_ws = _ensure_ws(ss, "Jobs", JOBS_HEADER)
         jrows, jcur = _jobs_rows(db, state.jobs_cursor)
-        _append(_ensure_ws(ss, "Jobs", JOBS_HEADER), jrows)
+        _append(jobs_ws, jrows)
+        _set_status_dropdown(jobs_ws, JOBS_HEADER.index("Status"), JOB_STATUS_OPTIONS)
         tabs["Jobs"] = len(jrows)
         state.jobs_cursor = jcur
 
@@ -192,8 +232,10 @@ def sync_all(db: Session) -> dict:
         tabs["Resume Stats"] = len(rsrows)
 
         # Applications (overwrite with real applied details)
+        apps_ws = _ensure_ws(ss, "Applications", APPLICATIONS_HEADER)
         arows = _applications_rows(db)
-        _overwrite(_ensure_ws(ss, "Applications", APPLICATIONS_HEADER), APPLICATIONS_HEADER, arows)
+        _overwrite(apps_ws, APPLICATIONS_HEADER, arows)
+        _set_status_dropdown(apps_ws, APPLICATIONS_HEADER.index("Status"), APP_STATUS_OPTIONS)
         tabs["Applications"] = len(arows)
 
         rows_written = sum(tabs.values())
