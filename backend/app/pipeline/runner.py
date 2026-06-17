@@ -107,7 +107,8 @@ def run_pipeline(db: Session) -> dict:
                 description=nj.description,
                 experience=nj.experience,
                 apply_url=nj.apply_url,
-                contact_email=first_email(nj.description, nj.title),
+                contact_email=(nj.raw or {}).get("contact_email")
+                or first_email(nj.description, nj.title),
                 posted_date=nj.posted_date,
                 employment_type=nj.employment_type,
                 remote_status=nj.remote_status,

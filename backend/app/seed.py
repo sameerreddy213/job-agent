@@ -12,6 +12,7 @@ DEFAULT_SOURCES = [
     {"name": "ashby", "kind": "ats", "apply_policy": "manual"},
     {"name": "linkedin", "kind": "ats", "apply_policy": "manual"},
     {"name": "naukri", "kind": "ats", "apply_policy": "manual"},
+    {"name": "indeed", "kind": "ats", "apply_policy": "manual"},
     {"name": "internshala", "kind": "ats", "apply_policy": "manual"},
 ]
 
@@ -27,35 +28,29 @@ STARTER_CONFIG: dict[str, dict] = {
         "leadsquared", "darwinbox", "browserstack", "chargebee",
     ]},
     "ashby": {"boards": ["razorpay", "zepto"]},
+    # JobSpy-backed sources (free, no token). Tune per single-IP rate limits.
     "linkedin": {
-        "actor": "curious_coder~linkedin-jobs-scraper",
-        "input": {
-            "urls": [
-                "https://www.linkedin.com/jobs/search/"
-                "?keywords=software%20engineer&location=India&f_E=1%2C2&f_TPR=r2592000"
-            ],
-            "count": 50,
-            "scrapeCompany": False,
-        },
+        "search_term": "software engineer",
+        "location": "India",
+        "results_wanted": 30,
+        "hours_old": 720,
     },
     "naukri": {
-        "actor": "muhammetakkurtt~naukri-job-scraper",
-        "input": {
-            "keyword": "software developer",
-            "experience": "0",
-            "freshness": "30",
-            "maxJobs": 50,
-            "fetchDetails": True,
-        },
+        "search_term": "software developer fresher",
+        "location": "India",
+        "results_wanted": 40,
+        "hours_old": 720,
+    },
+    "indeed": {
+        "search_term": "software developer fresher",
+        "location": "India",
+        "results_wanted": 40,
+        "hours_old": 720,
     },
     "internshala": {
-        "actor": "bareezh_codes~internshala-scrapper",
-        "input": {
-            "job_category": "Software Development",
-            "max_results": 50,
-            "pages_to_scrape": 5,
-            "work_from_home": True,
-        },
+        "category": "software-development",
+        "work_from_home": False,
+        "pages": 3,
     },
 }
 

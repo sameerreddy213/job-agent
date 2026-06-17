@@ -20,3 +20,6 @@ reportlab==4.2.5
 gspread==6.1.4
 google-auth==2.36.0
 tzdata==2024.2
+# Free job scraping (replaces paid Apify). python-jobspy pulls in pandas etc.
+python-jobspy==1.1.80
+beautifulsoup4==4.12.3
